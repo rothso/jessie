@@ -1,0 +1,160 @@
+body {
+  margin: 20px;
+  font-family: 'Roboto';
+  font-size: 16px;
+}
+
+.container {
+  display: inline-block;
+  padding: 40px;
+  border: 2px solid #c0cadb;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.calendar {
+  display: inline-block;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.calendar-month {
+  font-size: 16px;
+  font-weight: 500;
+  color: #4d616c;
+}
+
+.calendar-arrows {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 60px;
+}
+
+.calendar-arrow {
+  font-size: 18px;
+  color: #575757;
+  cursor: pointer;
+}
+
+.calendar-arrow.disabled {
+  color: #afafaf;
+}
+
+.calendar-body {
+  display: table;
+  border-collapse: collapse;
+}
+
+.calendar-row {
+  display: table-row;
+}
+
+.calendar-cell {
+  display: table-cell;
+  width: 45px;
+  height: 45px;
+  vertical-align: middle;
+  text-align: center;
+  border: 1px solid #d5d4df;
+}
+
+.calendar-week .calendar-cell:not(.calendar-cell-disabled) {
+  cursor: pointer;
+}
+
+.calendar-weekdays {
+  color: #4d616c;
+  font-weight: 500;
+}
+
+.calendar-cell-weekday {
+  border: none;
+}
+
+.calendar-cell-disabled {
+  background: #f2f3f7;
+  color: #a8a8a8;
+  cursor: not-allowed;
+}
+
+.calendar-cell-low-availability {
+  background: #e9f0f5;
+}
+
+.calendar-cell-active {
+  background: #45539d;
+  color: #ffffff;
+}
+
+.calendar-legend {
+  display: flex;
+  column-gap: 15px;
+  margin: 15px 0 25px;
+}
+
+.calendar-legend-item {
+  display: flex;
+  align-items: center;
+  column-gap: 10px;
+  flex: 1;
+}
+
+.calendar-legend-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  border: 1px solid #d5d4df;
+}
+
+.calendar-legend-label {
+  font-weight: 300;
+}
+
+.calendar-time {
+  display: flex;
+  column-gap: 15px;
+  margin-bottom: 25px;
+}
+
+.calendar-time-item {
+  flex: 1;
+}
+
+.calendar-time-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #4d616c;
+  margin-bottom: 15px;
+}
+
+.calendar-time-dropdown {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 300;
+  color: #464646;
+  padding: 15px 20px;
+  border: 2px solid #c0cadb;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-time-arrow {
+  color: #afafaf;
+  font-size: 18px;
+}
+
+.calendar-availability {
+  padding: 15px 35px;
+  background: #7dc242;
+  font-weight: 500;
+  color: #ffffff;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
