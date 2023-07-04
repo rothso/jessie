@@ -1,9 +1,12 @@
 const $table = document.querySelector(".calendar-body");
 const $header = document.querySelector(".calendar-header");
-const reservationId = 105;
+const $time = document.querySelector(".calendar-time");
+
+const RESERVATION_ID = 105;
+const INITIAL_START_OF_MONTH = dayjs().startOf("month");
 
 let state = {
-  startOfMonth: dayjs().startOf("month"),
+  startOfMonth: INITIAL_START_OF_MONTH,
   calendar: null,
   availability: null,
   selectedDate: null,
@@ -30,10 +33,10 @@ async function onDateSelect() {
 async function onMonthChange(startOfMonth) {
   const endOfMonth = startOfMonth.endOf("month");
 
-  // Workaround for some cold weeks in December that wrap around
+  // Workaround for some weeks in December that wrap around
   const endWeek =
     endOfMonth.week() === 1
-      ? endOfMonth.week(endOfMonth.subtract(1, "week").week() + 1).week()
+      ? endOfMonth.subtract(1, "week").week() + 1
       : endOfMonth.week();
 
   // Build calendar data
@@ -51,7 +54,7 @@ async function onMonthChange(startOfMonth) {
       method: "POST",
       body: JSON.stringify({
         date: startOfMonth.format("YYYY-MM-DD"),
-        resourceIDRes: reservationId,
+        resourceIDRes: RESERVATION_ID,
       }),
     }
   );
@@ -64,6 +67,18 @@ async function onMonthChange(startOfMonth) {
 function renderHeader({ startOfMonth }) {
   $header.querySelector(".calendar-month").innerText =
     startOfMonth.format("MMMM YYYY");
+
+  const [$backArrow, $nextArrow] = $header.querySelectorAll(".calendar-arrow");
+
+  if (INITIAL_START_OF_MONTH.month() === startOfMonth.month()) {
+    $backArrow.classList.add("calendar-arrow-disabled");
+    $backArrow.removeEventListener("click", onPreviousMonth);
+    $nextArrow.addEventListener("click", onNextMonth);
+  } else {
+    $backArrow.classList.remove("calendar-arrow-disabled");
+    $backArrow.addEventListener("click", onPreviousMonth);
+    $nextArrow.addEventListener("click", onNextMonth);
+  }
 }
 
 function renderCalendar({
@@ -106,5 +121,24 @@ function renderCalendar({
   }
 }
 
+function renderTimes() {
+  const startTime = dayjs("7:00", "HH:mm");
+  const endTime = dayjs("22:00", "HH:mm");
+
+  const [$start, $end] = $time.querySelectorAll(".calendar-time-dropdown");
+
+  [$start, $end].forEach(($select) => {
+    for (var time = startTime; time <= endTime; time = time.add(15, "m")) {
+      $select.add(new Option(time.format("hh:mma"), time.format("HH:mm")));
+    }
+  });
+
+  $start.value = startTime.format("HH:mm");
+  $end.value = endTime.format("HH:mm");
+}
+
 // Initialize calendar to current month
 onMonthChange(state.startOfMonth);
+
+// Initialize time select dropdowns
+renderTimes();

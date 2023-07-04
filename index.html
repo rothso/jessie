@@ -6,9 +6,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/customParseFormat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/weekOfYear.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/weekday.js"></script>
   <script>
+    dayjs.extend(window.dayjs_plugin_customParseFormat)
     dayjs.extend(window.dayjs_plugin_weekday)
     dayjs.extend(window.dayjs_plugin_weekOfYear)
   </script>
@@ -21,8 +23,8 @@
       <div class="calendar-header">
         <div class="calendar-month"></div>
         <div class="calendar-arrows">
-          <i class="fa-solid fa-angle-left calendar-arrow" onClick="onPreviousMonth()"></i>
-          <i class="fa-solid fa-angle-right calendar-arrow" onClick="onNextMonth()"></i>
+          <i class="fa-solid fa-angle-left calendar-arrow"></i>
+          <i class="fa-solid fa-angle-right calendar-arrow"></i>
         </div>
       </div>
       <div class="calendar-body">
@@ -49,16 +51,14 @@
       <div class="calendar-time">
         <div class="calendar-time-item">
           <div class="calendar-time-label">From</div>
-          <div class="calendar-time-dropdown">
-            <span class="">07:00 am</span>
-            <i class="fa-solid fa-angle-down calendar-time-arrow"></i>
+          <div class="calendar-time-dropdown-wrapper">
+            <select class="calendar-time-dropdown"></select>
           </div>
         </div>
         <div class="calendar-time-item">
           <div class="calendar-time-label">To</div>
-          <div class="calendar-time-dropdown">
-            <span class="">03:30 pm</span>
-            <i class="fa-solid fa-angle-down calendar-time-arrow"></i>
+          <div class="calendar-time-dropdown-wrapper">
+            <select class="calendar-time-dropdown"></select>
           </div>
         </div>
       </div>

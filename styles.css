@@ -41,8 +41,8 @@ body {
   cursor: pointer;
 }
 
-.calendar-arrow.disabled {
-  color: #afafaf;
+.calendar-arrow-disabled {
+  visibility: hidden;
 }
 
 .calendar-body {
@@ -135,19 +135,38 @@ body {
   margin-bottom: 15px;
 }
 
+.calendar-time-dropdown-wrapper {
+  position: relative;
+}
+
+.calendar-time-dropdown-wrapper:after {
+  content:"\f107";
+  position: absolute;
+  z-index: 1;
+  font: 18px FontAwesome;
+  color: #afafaf;
+  right: 20px;
+  top: 18px;
+  pointer-events: none;
+}
+
 .calendar-time-dropdown {
   display: flex;
+  width: 100%;
   justify-content: space-between;
+  font: inherit;
   font-weight: 300;
   color: #464646;
   padding: 15px 20px;
   border: 2px solid #c0cadb;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  outline: none;
+  appearance: none;
 }
 
-.calendar-time-arrow {
-  color: #afafaf;
-  font-size: 18px;
+.calendar-time-dropdown:active {
+  border: 2px solid #c0cadb;
 }
 
 .calendar-availability {
