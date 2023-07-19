@@ -225,9 +225,9 @@ class ReservationsWidget extends HTMLElement {
     this.$time = document.querySelector(".calendar-time");
 
     // Bind callbacks
-    this.onPreviousMonth.bind(this);
-    this.onNextMonth.bind(this);
-    this.onDateSelect.bind(this);
+    this.onPreviousMonth = this.onPreviousMonth.bind(this);
+    this.onNextMonth = this.onNextMonth.bind(this);
+    this.onDateSelect = this.onDateSelect.bind(this);
 
     this.state = {
       startOfMonth: dayjs().startOf("month"),
