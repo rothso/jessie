@@ -1,70 +1,24 @@
 <html>
+  <head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="./styles.css" />
 
-<head>
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="./styles.css" />
-  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/customParseFormat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/weekOfYear.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/weekday.js"></script>
-  <script>
-    dayjs.extend(window.dayjs_plugin_customParseFormat)
-    dayjs.extend(window.dayjs_plugin_weekday)
-    dayjs.extend(window.dayjs_plugin_weekOfYear)
-  </script>
-  <script src="./reservations.js" defer></script>
-</head>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/customParseFormat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/weekOfYear.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/weekday.js"></script>
+    <script>
+      dayjs.extend(window.dayjs_plugin_customParseFormat);
+      dayjs.extend(window.dayjs_plugin_weekday);
+      dayjs.extend(window.dayjs_plugin_weekOfYear);
+    </script>
+    <script src="./reservations-widget/reservations.js" defer></script>
+  </head>
 
-<body>
-  <div class="container">
-    <div class="calendar">
-      <div class="calendar-header">
-        <div class="calendar-month"></div>
-        <div class="calendar-arrows">
-          <i class="fa-solid fa-angle-left calendar-arrow"></i>
-          <i class="fa-solid fa-angle-right calendar-arrow"></i>
-        </div>
-      </div>
-      <div class="calendar-body">
-        <div class="calendar-row calendar-weekdays">
-          <div class="calendar-cell calendar-cell-weekday">Su</div>
-          <div class="calendar-cell calendar-cell-weekday">Mo</div>
-          <div class="calendar-cell calendar-cell-weekday">Tu</div>
-          <div class="calendar-cell calendar-cell-weekday">We</div>
-          <div class="calendar-cell calendar-cell-weekday">Th</div>
-          <div class="calendar-cell calendar-cell-weekday">Fr</div>
-          <div class="calendar-cell calendar-cell-weekday">Sa</div>
-        </div>
-      </div>
-      <div class="calendar-legend">
-        <div class="calendar-legend-item">
-          <div class="calendar-legend-cell">1</div>
-          <div class="calendar-legend-label">High availability</div>
-        </div>
-        <div class="calendar-legend-item">
-          <div class="calendar-legend-cell calendar-cell-low-availability">1</div>
-          <div class="calendar-legend-label">Low availability</div>
-        </div>
-      </div>
-      <div class="calendar-time">
-        <div class="calendar-time-item">
-          <div class="calendar-time-label">From</div>
-          <div class="calendar-time-dropdown-wrapper">
-            <select class="calendar-time-dropdown"></select>
-          </div>
-        </div>
-        <div class="calendar-time-item">
-          <div class="calendar-time-label">To</div>
-          <div class="calendar-time-dropdown-wrapper">
-            <select class="calendar-time-dropdown"></select>
-          </div>
-        </div>
-      </div>
-      <div class="calendar-availability">Check availability</div>
+  <body>
+    <div class="container">
+      <reservations-widget reservationId="105" />
     </div>
-  </div>
-</body>
-
+  </body>
 </html>
