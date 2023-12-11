@@ -36,6 +36,10 @@ class ReservationsWidget extends HTMLElement {
           cursor: pointer;
         }
 
+        .calendar-arrow-loading {
+          cursor: wait;
+        }
+
         .calendar-arrow-disabled {
           visibility: hidden;
         }
@@ -234,6 +238,7 @@ class ReservationsWidget extends HTMLElement {
       calendar: null,
       availability: null,
       selectedDate: null,
+      loadingCalendar: true,
     };
 
     // Initialize calendar to current month
@@ -247,10 +252,11 @@ class ReservationsWidget extends HTMLElement {
     return this.getAttribute("reservationId");
   }
 
-  setState(newState) {
+  setState(newState, callback = () => {}) {
     this.state = { ...this.state, ...newState };
     this.renderCalendar(this.state);
     this.renderHeader(this.state);
+    callback();
   }
 
   async onNextMonth() {
@@ -266,39 +272,47 @@ class ReservationsWidget extends HTMLElement {
   }
 
   async onMonthChange(startOfMonth) {
-    const endOfMonth = startOfMonth.endOf("month");
+    if (!!this.state.calendar && this.state.loadingCalendar) return;
 
-    // Workaround for some weeks in December that wrap around
-    const endWeek = endOfMonth.week() === 1 ? endOfMonth.subtract(1, "week").week() + 1 : endOfMonth.week();
+    this.setState({ loadingCalendar: true }, () => {
+      const endOfMonth = startOfMonth.endOf("month");
 
-    // Build calendar data
-    const calendar = [];
-    for (let week = startOfMonth.week(); week < endWeek + 1; week++) {
-      for (let weekday = 0; weekday < 7; weekday++) {
-        calendar.push(startOfMonth.week(week).weekday(weekday));
+      // Workaround for some weeks in December that wrap around
+      const endWeek = endOfMonth.week() === 1 ? endOfMonth.subtract(1, "week").week() + 1 : endOfMonth.week();
+
+      // Build calendar data
+      const calendar = [];
+      for (let week = startOfMonth.week(); week < endWeek + 1; week++) {
+        for (let weekday = 0; weekday < 7; weekday++) {
+          calendar.push(startOfMonth.week(week).weekday(weekday));
+        }
       }
-    }
 
-    // Fetch availability data
-    const response = await fetch("https://portal.dupontcenter.org/api/calendarAvailability", {
-      method: "POST",
-      body: JSON.stringify({
-        date: startOfMonth.format("YYYY-MM-DD"),
-        resourceIDRes: this.reservationId,
-      }),
+      // Fetch availability data
+      fetch("https://portal.dupontcenter.org/api/calendarAvailability", {
+        method: "POST",
+        body: JSON.stringify({
+          date: startOfMonth.format("YYYY-MM-DD"),
+          resourceIDRes: this.reservationId,
+        }),
+      })
+        .then((response) => response.json())
+        .then((jsonData) => {
+          const availability = jsonData.day_availability;
+          this.setState({ startOfMonth, calendar, loadingCalendar: false, availability, selectedDate: null });
+        });
     });
-    const jsonData = await response.json();
-    const availability = jsonData.day_availability;
-
-    this.setState({ startOfMonth, calendar, availability, selectedDate: null });
   }
 
-  renderHeader({ startOfMonth }) {
+  renderHeader({ startOfMonth, loadingCalendar }) {
     this.$header.querySelector(".calendar-month").innerText = startOfMonth.format("MMMM YYYY");
 
-    const [$backArrow, $nextArrow] = this.$header.querySelectorAll(".calendar-arrow");
+    const $arrows = this.$header.querySelectorAll(".calendar-arrow");
+    $arrows.forEach(($arrow) => $arrow.classList.toggle("calendar-arrow-loading", loadingCalendar));
 
-    if (dayjs().startOf("month").month() === startOfMonth.month()) {
+    const [$backArrow, $nextArrow] = $arrows;
+
+    if (dayjs().isSame(startOfMonth, "month") && dayjs().isSame(startOfMonth, "year")) {
       $backArrow.classList.add("calendar-arrow-disabled");
       $backArrow.removeEventListener("click", this.onPreviousMonth);
       $nextArrow.addEventListener("click", this.onNextMonth);
@@ -309,7 +323,9 @@ class ReservationsWidget extends HTMLElement {
     }
   }
 
-  renderCalendar({ startOfMonth, calendar, availability, selectedDate }) {
+  renderCalendar({ startOfMonth, calendar, loadingCalendar, availability, selectedDate }) {
+    if (loadingCalendar) return;
+
     // Remove the previous calendar
     this.$table?.querySelectorAll(".calendar-week").forEach((el) => el.remove());
 
