@@ -8,6 +8,7 @@ class ReservationsWidget extends HTMLElement {
       <style>
         .calendar {
           display: inline-block;
+          width: 320px;
         }
 
         .calendar-header {
@@ -20,7 +21,7 @@ class ReservationsWidget extends HTMLElement {
         .calendar-month {
           font-size: 16px;
           font-weight: 500;
-          color: #4d616c;
+          color: #484c5b;
         }
 
         .calendar-arrows {
@@ -67,7 +68,7 @@ class ReservationsWidget extends HTMLElement {
         }
 
         .calendar-weekdays {
-          color: #4d616c;
+          color: #484c5b;
           font-weight: 500;
         }
 
@@ -130,7 +131,7 @@ class ReservationsWidget extends HTMLElement {
         .calendar-time-label {
           font-size: 16px;
           font-weight: 500;
-          color: #4d616c;
+          color: #484c5b;
           margin-bottom: 15px;
         }
 
@@ -168,13 +169,84 @@ class ReservationsWidget extends HTMLElement {
           border: 2px solid #c0cadb;
         }
 
-        .calendar-availability {
+        .availability-button {
           padding: 15px 35px;
           background: #7dc242;
           font-weight: 500;
           color: #ffffff;
           text-align: center;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          cursor: pointer;
+        }
+
+        .availability-button-loading {
+          cursor: wait;
+        }
+
+        .availability-add-icon {
+          margin-left: 4px;
+        }
+
+        .availability-title {
+          font-size: 16px;
+          font-weight: 500;
+          color: #484c5b;
+          text-align: center;
+          margin: 25px 0;
+        }
+
+        .availability-fees {
+          display: flex;
+          flex-direction: column;
+          row-gap: 10px;
+        }
+
+        .availability-fee {
+          display: flex;
+          flex-direction: column;
+          row-gap: 4px;
+          padding: 5px 0;
+          border-bottom: 1px dotted #c0cadb;
+        }
+
+        .line-item-row {
+          display: flex;
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .line-item-name {
+          color: #484c5b;
+        }
+
+        .line-item-price {
+          color: #484c5b;
+          font-weight: 300;
+        }
+
+        .line-item-description {
+          color: #969696;
+          font-weight: 300;
+        }
+
+        .availability-total {
+          padding: 15px 0;
+        }
+
+        .availability-total .line-item-name {
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+
+        .availability-total .line-item-price {
+          text-decoration: underline
+        }
+
+        .availability-footnote {
+          font-size: 14px;
+          font-weight: 300;
+          color: #575757;
+          margin: 0 0 25px;
         }
       </style>
       <div class="calendar">
@@ -220,25 +292,32 @@ class ReservationsWidget extends HTMLElement {
             </div>
           </div>
         </div>
-        <div class="calendar-availability">Check availability</div>
+        <div class="calendar-availability">
+          <div class="availability-button availability-check">Check availability</div>
+          <div class="availability-details"></div>
+        </div>
       </div>
     `;
 
     this.$table = document.querySelector(".calendar-body");
     this.$header = document.querySelector(".calendar-header");
     this.$time = document.querySelector(".calendar-time");
+    this.$availability = document.querySelector(".calendar-availability");
 
     // Bind callbacks
     this.onPreviousMonth = this.onPreviousMonth.bind(this);
     this.onNextMonth = this.onNextMonth.bind(this);
     this.onDateSelect = this.onDateSelect.bind(this);
+    this.onCheckAvailability = this.onCheckAvailability.bind(this);
 
     this.state = {
       startOfMonth: dayjs().startOf("month"),
       calendar: null,
-      availability: null,
-      selectedDate: null,
+      dayAvailability: null,
       loadingCalendar: true,
+      selectedDate: null,
+      timeAvailability: null,
+      loadingAvailability: false,
     };
 
     // Initialize calendar to current month
@@ -252,29 +331,34 @@ class ReservationsWidget extends HTMLElement {
     return this.getAttribute("reservationId");
   }
 
+  isThisMonth(date) {
+    return dayjs().isSame(date, "month") && dayjs().isSame(date, "year");
+  }
+
   setState(newState, callback = () => {}) {
     this.state = { ...this.state, ...newState };
     this.renderCalendar(this.state);
     this.renderHeader(this.state);
+    this.renderAvailability(this.state);
     callback();
   }
 
-  async onNextMonth() {
-    await this.onMonthChange(this.state.startOfMonth.add(1, "month"));
+  onNextMonth() {
+    this.onMonthChange(this.state.startOfMonth.add(1, "month"));
   }
 
-  async onPreviousMonth() {
-    await this.onMonthChange(this.state.startOfMonth.subtract(1, "month"));
+  onPreviousMonth() {
+    this.onMonthChange(this.state.startOfMonth.subtract(1, "month"));
   }
 
-  async onDateSelect(selectedDate) {
-    this.setState({ selectedDate });
+  onDateSelect(selectedDate) {
+    this.setState({ selectedDate, timeAvailability: null });
   }
 
-  async onMonthChange(startOfMonth) {
+  onMonthChange(startOfMonth) {
     if (!!this.state.calendar && this.state.loadingCalendar) return;
 
-    this.setState({ loadingCalendar: true }, () => {
+    this.setState({ loadingCalendar: true, timeAvailability: null }, () => {
       const endOfMonth = startOfMonth.endOf("month");
 
       // Workaround for some weeks in December that wrap around
@@ -288,18 +372,57 @@ class ReservationsWidget extends HTMLElement {
         }
       }
 
+      // Select today's date if we're on the current month
+      const selectedDate = this.isThisMonth(startOfMonth) ? dayjs() : null;
+
       // Fetch availability data
       fetch("https://portal.dupontcenter.org/api/calendarAvailability", {
         method: "POST",
         body: JSON.stringify({
-          date: startOfMonth.format("YYYY-MM-DD"),
           resourceIDRes: this.reservationId,
+          date: startOfMonth.format("YYYY-MM-DD"),
         }),
       })
         .then((response) => response.json())
         .then((jsonData) => {
-          const availability = jsonData.day_availability;
-          this.setState({ startOfMonth, calendar, loadingCalendar: false, availability, selectedDate: null });
+          this.setState({
+            startOfMonth,
+            calendar,
+            loadingCalendar: false,
+            dayAvailability: jsonData.day_availability,
+            selectedDate,
+          });
+        });
+    });
+  }
+
+  onCheckAvailability() {
+    const dateString = this.state.selectedDate.format("YYYY-MM-DD");
+    const [$start, $end] = this.$time.querySelectorAll(".calendar-time-dropdown");
+
+    this.setState({ timeAvailability: null, loadingAvailability: true }, () => {
+      fetch("https://portal.dupontcenter.org/api/resources/getAvailability", {
+        method: "POST",
+        body: JSON.stringify({
+          resourceIDRes: this.reservationId,
+          fromDateTime: `${dateString} ${$start.value}`,
+          toDateTime: `${dateString} ${$end.value}`,
+        }),
+      })
+        .then((response) => response.json())
+        .then((response) => {
+          this.setState({
+            timeAvailability: {
+              isAvailable: response.available,
+              errorMessage: response.error_message,
+              errorCode: response.errors.length ? Math.max(...response.errors) : null,
+              fees: Object.entries(response.feesForRequest).map(([item, price]) => {
+                const [_, name, description] = /(.*) (\(.*\))/.exec(item) || [null, item];
+                return { name, description, price };
+              }),
+            },
+            loadingAvailability: false,
+          });
         });
     });
   }
@@ -323,7 +446,7 @@ class ReservationsWidget extends HTMLElement {
     }
   }
 
-  renderCalendar({ startOfMonth, calendar, loadingCalendar, availability, selectedDate }) {
+  renderCalendar({ startOfMonth, calendar, loadingCalendar, dayAvailability, selectedDate }) {
     if (loadingCalendar) return;
 
     // Remove the previous calendar
@@ -336,8 +459,8 @@ class ReservationsWidget extends HTMLElement {
       for (let weekday = 0; weekday < 7; weekday++) {
         const day = calendar[week * 7 + weekday];
         const isCurrentMonth = day.month() === startOfMonth.month();
-        const isLowAvailability = isCurrentMonth && !!availability[day.date()];
-        const isSelected = isCurrentMonth && selectedDate == day.date();
+        const isLowAvailability = isCurrentMonth && !!dayAvailability[day.date()];
+        const isSelected = isCurrentMonth && selectedDate?.date() === day.date();
 
         const $cell = document.createElement("div");
         $cell.classList.add("calendar-cell", "calendar-week");
@@ -347,7 +470,7 @@ class ReservationsWidget extends HTMLElement {
         $cell.innerText = day.date();
 
         if (isCurrentMonth) {
-          $cell.addEventListener("click", (event) => this.onDateSelect(event.target.innerText));
+          $cell.addEventListener("click", () => this.onDateSelect(day));
         }
 
         $row.appendChild($cell);
@@ -371,6 +494,89 @@ class ReservationsWidget extends HTMLElement {
 
     $start.value = startTime.format("HH:mm");
     $end.value = endTime.format("HH:mm");
+  }
+
+  renderAvailability({ selectedDate, timeAvailability, loadingAvailability }) {
+    const $availabilityButton = this.$availability.querySelector(".availability-check");
+    $availabilityButton.classList.toggle("availability-button-loading", loadingAvailability);
+
+    if (!selectedDate) {
+      $availabilityButton.removeEventListener("click", this.onCheckAvailability);
+    } else {
+      $availabilityButton.addEventListener("click", this.onCheckAvailability);
+    }
+
+    // Remove the previous availabilities
+    const $availabilityDetails = this.$availability.querySelector(".availability-details");
+    $availabilityDetails.replaceChildren();
+
+    if (timeAvailability) {
+      // Get the current selected times
+      const [$start, $end] = this.$time.querySelectorAll(".calendar-time-dropdown");
+      const startTime = dayjs($start.value, "HH:mm").format("h:mma");
+      const endTime = dayjs($end.value, "HH:mm").format("h:mma");
+
+      const $availabilityTitle = document.createElement("div");
+      $availabilityTitle.classList.add("availability-title");
+      $availabilityTitle.innerText = `${selectedDate.format("MMMM DD, YYYY")} - ${startTime} to ${endTime}`;
+
+      const $availabilityFees = document.createElement("div");
+      $availabilityFees.classList.add("availability-fees");
+      $availabilityFees.innerHTML = timeAvailability.fees
+        .filter((fee) => fee.price > 0)
+        .map((fee) => {
+          const descriptionHtml = fee.description
+            ? `
+              <div class="line-item-row">
+                <div class="line-item-description">${fee.description}</div>
+              </div>
+            `
+            : "";
+          return `
+            <div class="availability-fee">
+              <div class="line-item-row">
+                <div class="line-item-name">${fee.name}${fee.name === "Tax" ? "*" : ""}</div>
+                <div class="line-item-price">$${fee.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+              </div>
+              ${descriptionHtml}
+            </div>
+          `;
+        })
+        .join("");
+
+      const total = timeAvailability.fees.reduce((total, fee) => (total += fee.price), 0);
+      const $availabilityTotal = document.createElement("div");
+      $availabilityTotal.classList.add("availability-total");
+      $availabilityTotal.innerHTML = `
+        <div class="line-item-row">
+          <div class="line-item-name">Total</div>
+          <div class="line-item-price">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+        </div>
+      `;
+
+      const $availabilityFootnote = document.createElement("div");
+      $availabilityFootnote.classList.add("availability-footnote");
+      $availabilityFootnote.innerText =
+        "* Tax Exemption and discounted room rates will apply on final invoice after reservation approval.";
+
+      const date = selectedDate.format("YYYY-MM-DD");
+      const formUrl = `https://portal.dupontcenter.org/events/public?resID=${this.reservationId}&from=${date} ${$start.value}&to=${date} ${$end.value}`;
+      const $availabilityAdd = document.createElement("div");
+      $availabilityAdd.classList.add("availability-button", "availability-add");
+      $availabilityAdd.addEventListener("click", () => (location.href = formUrl));
+      $availabilityAdd.innerHTML = `
+        Add to request
+        <i class="fa-solid fa-plus availability-add-icon"></i>
+      `;
+
+      $availabilityDetails.replaceChildren(
+        $availabilityTitle,
+        $availabilityFees,
+        $availabilityTotal,
+        $availabilityFootnote,
+        $availabilityAdd
+      );
+    }
   }
 }
 
