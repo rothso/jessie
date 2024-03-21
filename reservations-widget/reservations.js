@@ -369,8 +369,8 @@ class ReservationsWidget extends HTMLElement {
   }
 
   get initialDay() {
-    // The first available date is tomorrow's date
-    return dayjs().add(1, "day");
+    // The first available date is today's date
+    return dayjs();
   }
 
   get resourceId() {
