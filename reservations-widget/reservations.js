@@ -671,7 +671,7 @@ class ReservationsWidget extends HTMLElement {
         const error = friendlyErrors[timeAvailability.errorCode] || {
           title: "<b>This date/time is not available.</b>",
           description:
-            timeAvailability.errorMessage.replace(/([^.])$/, "$1.") ||
+            timeAvailability.errorMessage?.replace(/([^.])$/, "$1.") ||
             "This resource is not available for the requested date/time.",
         };
 
