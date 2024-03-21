@@ -205,11 +205,14 @@ class ReservationsWidget extends HTMLElement {
           row-gap: 10px;
         }
 
-        .availability-fee {
+        .availability-line-item {
           display: flex;
           flex-direction: column;
           row-gap: 4px;
           padding: 5px 0;
+        }
+
+        .availability-fee {
           border-bottom: 1px dotted #c0cadb;
         }
 
@@ -231,6 +234,7 @@ class ReservationsWidget extends HTMLElement {
         .line-item-description {
           color: #969696;
           font-weight: 300;
+          text-align: left;
         }
 
         .availability-total {
@@ -250,6 +254,7 @@ class ReservationsWidget extends HTMLElement {
           font-size: 14px;
           font-weight: 300;
           color: #575757;
+          text-align: left;
           margin: 0 0 25px;
         }
       </style>
@@ -317,7 +322,7 @@ class ReservationsWidget extends HTMLElement {
     this.onCheckAvailability = this.onCheckAvailability.bind(this);
 
     this.state = {
-      startOfMonth: dayjs().startOf("month"),
+      startOfMonth: this.initialDay.startOf("month"),
       calendar: null,
       dayAvailability: null,
       loadingCalendar: true,
@@ -333,6 +338,11 @@ class ReservationsWidget extends HTMLElement {
     this.renderTimes();
   }
 
+  get initialDay() {
+    // The first available date is tomorrow's date
+    return dayjs().add(1, "day");
+  }
+
   get resourceId() {
     return this.getAttribute("resourceId");
   }
@@ -342,7 +352,7 @@ class ReservationsWidget extends HTMLElement {
   }
 
   isThisMonth(date) {
-    return dayjs().isSame(date, "month") && dayjs().isSame(date, "year");
+    return this.initialDay.isSame(date, "month") && this.initialDay.isSame(date, "year");
   }
 
   setState(newState, callback = () => {}) {
@@ -382,8 +392,8 @@ class ReservationsWidget extends HTMLElement {
         }
       }
 
-      // Select today's date if we're on the current month
-      const selectedDate = this.isThisMonth(startOfMonth) ? dayjs() : null;
+      // Select the first available date if we're on the current month
+      const selectedDate = this.isThisMonth(startOfMonth) ? this.initialDay : null;
 
       // Fetch availability data
       fetch("https://portal.dupontcenter.org/api/calendarAvailability", {
@@ -445,7 +455,7 @@ class ReservationsWidget extends HTMLElement {
 
     const [$backArrow, $nextArrow] = $arrows;
 
-    if (dayjs().isSame(startOfMonth, "month") && dayjs().isSame(startOfMonth, "year")) {
+    if (this.initialDay.isSame(startOfMonth, "month") && this.initialDay.isSame(startOfMonth, "year")) {
       $backArrow.classList.add("calendar-arrow-disabled");
       $backArrow.removeEventListener("click", this.onPreviousMonth);
       $nextArrow.addEventListener("click", this.onNextMonth);
@@ -468,18 +478,18 @@ class ReservationsWidget extends HTMLElement {
 
       for (let weekday = 0; weekday < 7; weekday++) {
         const day = calendar[week * 7 + weekday];
-        const isCurrentMonth = day.month() === startOfMonth.month();
-        const isLowAvailability = isCurrentMonth && !!dayAvailability[day.date()];
-        const isSelected = isCurrentMonth && selectedDate?.date() === day.date();
+        const isEnabled = day.month() === startOfMonth.month() && day.isAfter(this.initialDay.subtract(1, "day"));
+        const isLowAvailability = isEnabled && !!dayAvailability[day.date()];
+        const isSelected = isEnabled && selectedDate?.date() === day.date();
 
         const $cell = document.createElement("div");
         $cell.classList.add("calendar-cell", "calendar-week");
         $cell.classList.toggle("calendar-cell-active", isSelected);
-        $cell.classList.toggle("calendar-cell-disabled", !isCurrentMonth);
+        $cell.classList.toggle("calendar-cell-disabled", !isEnabled);
         $cell.classList.toggle("calendar-cell-low-availability", isLowAvailability);
         $cell.innerText = day.date();
 
-        if (isCurrentMonth) {
+        if (isEnabled) {
           $cell.addEventListener("click", () => this.onDateSelect(day));
         }
 
@@ -543,7 +553,7 @@ class ReservationsWidget extends HTMLElement {
             `
             : "";
           return `
-            <div class="availability-fee">
+            <div class="availability-line-item availability-fee">
               <div class="line-item-row">
                 <div class="line-item-name">${fee.name}${fee.name === "Tax" ? "*" : ""}</div>
                 <div class="line-item-price">$${fee.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
@@ -558,9 +568,14 @@ class ReservationsWidget extends HTMLElement {
       const $availabilityTotal = document.createElement("div");
       $availabilityTotal.classList.add("availability-total");
       $availabilityTotal.innerHTML = `
-        <div class="line-item-row">
-          <div class="line-item-name">Total</div>
-          <div class="line-item-price">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+        <div class="availability-line-item">
+          <div class="line-item-row">
+            <div class="line-item-name">Estimated Total</div>
+            <div class="line-item-price">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+          </div>
+          <div class="line-item-row">
+            <div class="line-item-description">Fees are subject to change by building management</div>
+          </div>
         </div>
       `;
 

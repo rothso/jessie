@@ -6,6 +6,7 @@ body {
 
 .container {
   display: inline-block;
+  width: 316px;
   padding: 40px;
   border: 2px solid #c0cadb;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
