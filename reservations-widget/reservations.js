@@ -7,8 +7,7 @@ class ReservationsWidget extends HTMLElement {
     this.innerHTML = `
       <style>
         .calendar {
-          display: inline-block;
-          width: 320px;
+          text-align: center;
         }
 
         .calendar-header {
@@ -46,6 +45,10 @@ class ReservationsWidget extends HTMLElement {
         }
 
         .calendar-body {
+          display: inline-block;
+        }
+
+        .calendar-grid {
           display: table;
           border-collapse: collapse;
         }
@@ -132,6 +135,7 @@ class ReservationsWidget extends HTMLElement {
           font-size: 16px;
           font-weight: 500;
           color: #484c5b;
+          text-align: left;
           margin-bottom: 15px;
         }
 
@@ -258,24 +262,26 @@ class ReservationsWidget extends HTMLElement {
           </div>
         </div>
         <div class="calendar-body">
-          <div class="calendar-row calendar-weekdays">
-            <div class="calendar-cell calendar-cell-weekday">Su</div>
-            <div class="calendar-cell calendar-cell-weekday">Mo</div>
-            <div class="calendar-cell calendar-cell-weekday">Tu</div>
-            <div class="calendar-cell calendar-cell-weekday">We</div>
-            <div class="calendar-cell calendar-cell-weekday">Th</div>
-            <div class="calendar-cell calendar-cell-weekday">Fr</div>
-            <div class="calendar-cell calendar-cell-weekday">Sa</div>
+          <div class="calendar-grid">
+            <div class="calendar-row calendar-weekdays">
+              <div class="calendar-cell calendar-cell-weekday">Su</div>
+              <div class="calendar-cell calendar-cell-weekday">Mo</div>
+              <div class="calendar-cell calendar-cell-weekday">Tu</div>
+              <div class="calendar-cell calendar-cell-weekday">We</div>
+              <div class="calendar-cell calendar-cell-weekday">Th</div>
+              <div class="calendar-cell calendar-cell-weekday">Fr</div>
+              <div class="calendar-cell calendar-cell-weekday">Sa</div>
+            </div>
           </div>
-        </div>
-        <div class="calendar-legend">
-          <div class="calendar-legend-item">
-            <div class="calendar-legend-cell">1</div>
-            <div class="calendar-legend-label">High availability</div>
-          </div>
-          <div class="calendar-legend-item">
-            <div class="calendar-legend-cell calendar-cell-low-availability">1</div>
-            <div class="calendar-legend-label">Low availability</div>
+          <div class="calendar-legend">
+            <div class="calendar-legend-item">
+              <div class="calendar-legend-cell">1</div>
+              <div class="calendar-legend-label">High availability</div>
+            </div>
+            <div class="calendar-legend-item">
+              <div class="calendar-legend-cell calendar-cell-low-availability">1</div>
+              <div class="calendar-legend-label">Low availability</div>
+            </div>
           </div>
         </div>
         <div class="calendar-time">
@@ -299,7 +305,7 @@ class ReservationsWidget extends HTMLElement {
       </div>
     `;
 
-    this.$table = document.querySelector(".calendar-body");
+    this.$table = document.querySelector(".calendar-grid");
     this.$header = document.querySelector(".calendar-header");
     this.$time = document.querySelector(".calendar-time");
     this.$availability = document.querySelector(".calendar-availability");
