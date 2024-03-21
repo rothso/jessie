@@ -322,6 +322,7 @@ class ReservationsWidget extends HTMLElement {
     this.onCheckAvailability = this.onCheckAvailability.bind(this);
 
     this.state = {
+      resource: null,
       startOfMonth: this.initialDay.startOf("month"),
       calendar: null,
       dayAvailability: null,
@@ -331,11 +332,13 @@ class ReservationsWidget extends HTMLElement {
       loadingAvailability: false,
     };
 
-    // Initialize calendar to current month
-    this.onMonthChange(this.state.startOfMonth);
+    this.getResource(() => {
+      // Initialize calendar to current month
+      this.onMonthChange(this.state.startOfMonth);
 
-    // Initialize time select dropdowns
-    this.renderTimes();
+      // Initialize time select dropdowns
+      this.renderTimes(this.state);
+    });
   }
 
   get initialDay() {
@@ -345,10 +348,6 @@ class ReservationsWidget extends HTMLElement {
 
   get resourceId() {
     return this.getAttribute("resourceId");
-  }
-
-  get reservationId() {
-    return this.getAttribute("reservationId");
   }
 
   isThisMonth(date) {
@@ -361,6 +360,32 @@ class ReservationsWidget extends HTMLElement {
     this.renderHeader(this.state);
     this.renderAvailability(this.state);
     callback();
+  }
+
+  getResource(callback = () => {}) {
+    // Fetch resource data
+    fetch("https://portal.dupontcenter.org/api/resources/loadResource", {
+      method: "POST",
+      body: JSON.stringify({
+        resourceIDRes: this.resourceId,
+      }),
+    })
+      .then((response) => response.json())
+      .then((response) => {
+        this.setState(
+          {
+            resource: {
+              id: response.resource.p_ems_resourceID,
+              name: response.resource.ResourceName,
+              minHours: Math.round((response.resource.MinBookingLengthInMinutesExternal / 60) * 10) / 10,
+              maxHours: Math.round((response.resource.MaxBookingLengthInMinutesExternal / 60) * 10) / 10,
+              startTime: response.settings.open_time,
+              endTime: response.settings.close_time,
+            },
+          },
+          callback
+        );
+      });
   }
 
   onNextMonth() {
@@ -404,12 +429,12 @@ class ReservationsWidget extends HTMLElement {
         }),
       })
         .then((response) => response.json())
-        .then((jsonData) => {
+        .then((response) => {
           this.setState({
             startOfMonth,
             calendar,
             loadingCalendar: false,
-            dayAvailability: jsonData.day_availability,
+            dayAvailability: response.day_availability,
             selectedDate,
           });
         });
@@ -500,9 +525,9 @@ class ReservationsWidget extends HTMLElement {
     }
   }
 
-  renderTimes() {
-    const startTime = dayjs("7:00", "HH:mm");
-    const endTime = dayjs("22:00", "HH:mm");
+  renderTimes({ resource }) {
+    const startTime = dayjs(resource.startTime, "HH:mm");
+    const endTime = dayjs(resource.endTime, "HH:mm");
 
     const [$start, $end] = this.$time.querySelectorAll(".calendar-time-dropdown");
 
@@ -516,7 +541,8 @@ class ReservationsWidget extends HTMLElement {
     $end.value = endTime.format("HH:mm");
   }
 
-  renderAvailability({ selectedDate, timeAvailability, loadingAvailability }) {
+  renderAvailability({ resource, selectedDate, timeAvailability, loadingAvailability }) {
+    console.log(resource);
     const $availabilityButton = this.$availability.querySelector(".availability-check");
     $availabilityButton.classList.toggle("availability-button-loading", loadingAvailability);
 
@@ -585,7 +611,7 @@ class ReservationsWidget extends HTMLElement {
         "* Tax Exemption and discounted room rates will apply on final invoice after reservation approval.";
 
       const date = selectedDate.format("YYYY-MM-DD");
-      const formUrl = `https://portal.dupontcenter.org/events/public?resID=${this.reservationId}&from=${date} ${$start.value}&to=${date} ${$end.value}`;
+      const formUrl = `https://portal.dupontcenter.org/events/public?resID=${resource.id}&from=${date} ${$start.value}&to=${date} ${$end.value}`;
       const $availabilityAdd = document.createElement("div");
       $availabilityAdd.classList.add("availability-button", "availability-add");
       $availabilityAdd.addEventListener("click", () => (location.href = formUrl));
