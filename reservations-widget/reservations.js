@@ -247,7 +247,8 @@ class ReservationsWidget extends HTMLElement {
         }
 
         .availability-total .line-item-price {
-          text-decoration: underline
+          text-decoration: underline;
+          text-underline-offset: 2px;
         }
 
         .availability-footnote {
@@ -256,6 +257,32 @@ class ReservationsWidget extends HTMLElement {
           color: #575757;
           text-align: left;
           margin: 0 0 25px;
+        }
+
+        .availability-reason {
+          color: #484c5b;
+          border: 2px solid #d9824c;
+          padding: 20px;
+        }
+
+        .availability-reason-icon {
+          color: #d9824c;
+          margin-right: 5px;
+        }
+
+        .availability-reason-title {
+          margin-bottom: 10px;
+          text-align: left;
+        }
+
+        .availability-reason-title b {
+          font-weight: 500;
+        }
+
+        .availability-reason-description {
+          font-size: 14px;
+          font-weight: 300;
+          text-align: left;
         }
       </style>
       <div class="calendar">
@@ -458,9 +485,11 @@ class ReservationsWidget extends HTMLElement {
         .then((response) => {
           this.setState({
             timeAvailability: {
-              isAvailable: response.available,
+              available: response.available,
               errorMessage: response.error_message,
-              errorCode: response.errors.length ? Math.max(...response.errors) : null,
+              errorCode: response.errors.filter((e) => !isNaN(e)).length
+                ? Math.max(...response.errors.filter((e) => !isNaN(e)))
+                : null,
               fees: Object.entries(response.feesForRequest).map(([item, price]) => {
                 const [_, name, description] = /(.*) (\(.*\))/.exec(item) || [null, item];
                 return { name, description, price };
@@ -542,7 +571,6 @@ class ReservationsWidget extends HTMLElement {
   }
 
   renderAvailability({ resource, selectedDate, timeAvailability, loadingAvailability }) {
-    console.log(resource);
     const $availabilityButton = this.$availability.querySelector(".availability-check");
     $availabilityButton.classList.toggle("availability-button-loading", loadingAvailability);
 
@@ -566,67 +594,99 @@ class ReservationsWidget extends HTMLElement {
       $availabilityTitle.classList.add("availability-title");
       $availabilityTitle.innerText = `${selectedDate.format("MMMM DD, YYYY")} - ${startTime} to ${endTime}`;
 
-      const $availabilityFees = document.createElement("div");
-      $availabilityFees.classList.add("availability-fees");
-      $availabilityFees.innerHTML = timeAvailability.fees
-        .filter((fee) => fee.price > 0)
-        .map((fee) => {
-          const descriptionHtml = fee.description
-            ? `
-              <div class="line-item-row">
-                <div class="line-item-description">${fee.description}</div>
+      if (timeAvailability.available) {
+        const $availabilityFees = document.createElement("div");
+        $availabilityFees.classList.add("availability-fees");
+        $availabilityFees.innerHTML = timeAvailability.fees
+          .filter((fee) => fee.price > 0)
+          .map((fee) => {
+            const descriptionHtml = fee.description
+              ? `
+                <div class="line-item-row">
+                  <div class="line-item-description">${fee.description}</div>
+                </div>
+              `
+              : "";
+            return `
+              <div class="availability-line-item availability-fee">
+                <div class="line-item-row">
+                  <div class="line-item-name">${fee.name}${fee.name === "Tax" ? "*" : ""}</div>
+                  <div class="line-item-price">$${fee.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+                </div>
+                ${descriptionHtml}
               </div>
-            `
-            : "";
-          return `
-            <div class="availability-line-item availability-fee">
-              <div class="line-item-row">
-                <div class="line-item-name">${fee.name}${fee.name === "Tax" ? "*" : ""}</div>
-                <div class="line-item-price">$${fee.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
-              </div>
-              ${descriptionHtml}
+            `;
+          })
+          .join("");
+
+        const total = timeAvailability.fees.reduce((total, fee) => (total += fee.price), 0);
+        const $availabilityTotal = document.createElement("div");
+        $availabilityTotal.classList.add("availability-total");
+        $availabilityTotal.innerHTML = `
+          <div class="availability-line-item">
+            <div class="line-item-row">
+              <div class="line-item-name">Estimated Total</div>
+              <div class="line-item-price">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
             </div>
-          `;
-        })
-        .join("");
-
-      const total = timeAvailability.fees.reduce((total, fee) => (total += fee.price), 0);
-      const $availabilityTotal = document.createElement("div");
-      $availabilityTotal.classList.add("availability-total");
-      $availabilityTotal.innerHTML = `
-        <div class="availability-line-item">
-          <div class="line-item-row">
-            <div class="line-item-name">Estimated Total</div>
-            <div class="line-item-price">$${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</div>
+            <div class="line-item-row">
+              <div class="line-item-description">Fees are subject to change by building management</div>
+            </div>
           </div>
-          <div class="line-item-row">
-            <div class="line-item-description">Fees are subject to change by building management</div>
+        `;
+
+        const $availabilityFootnote = document.createElement("div");
+        $availabilityFootnote.classList.add("availability-footnote");
+        $availabilityFootnote.innerText =
+          "* Tax Exemption and discounted room rates will apply on final invoice after reservation approval.";
+
+        const date = selectedDate.format("YYYY-MM-DD");
+        const formUrl = `https://portal.dupontcenter.org/events/public?resID=${resource.id}&from=${date} ${$start.value}&to=${date} ${$end.value}`;
+        const $availabilityAdd = document.createElement("div");
+        $availabilityAdd.classList.add("availability-button", "availability-add");
+        $availabilityAdd.addEventListener("click", () => (location.href = formUrl));
+        $availabilityAdd.innerHTML = `
+          Add to request
+          <i class="fa-solid fa-plus availability-add-icon"></i>
+        `;
+
+        $availabilityDetails.replaceChildren(
+          $availabilityTitle,
+          $availabilityFees,
+          $availabilityTotal,
+          $availabilityFootnote,
+          $availabilityAdd
+        );
+      } else {
+        const friendlyErrors = {
+          [-6]: {
+            title: `Minimum duration: <b>${resource.minHours} hour(s)</b>`,
+            description: `${resource.name} requires a minimum booking duration of ${resource.minHours} hour(s).`,
+          },
+          [-7]: {
+            title: `Maximum duration: <b>${resource.maxHours} hour(s)</b>`,
+            description: `${resource.name} limits the maximum booking duration to ${resource.maxHours} hour(s).`,
+          },
+        };
+
+        const error = friendlyErrors[timeAvailability.errorCode] || {
+          title: "<b>This date/time is not available.</b>",
+          description:
+            timeAvailability.errorMessage.replace(/([^.])$/, "$1.") ||
+            "This resource is not available for the requested date/time.",
+        };
+
+        const $availabilityReason = document.createElement("div");
+        $availabilityReason.classList.add("availability-reason");
+        $availabilityReason.innerHTML = `
+          <div class="availability-reason-title">
+            <i class="fa-solid fa-warning availability-reason-icon"></i>
+            ${error.title}
           </div>
-        </div>
-      `;
+          <div class="availability-reason-description">${error.description}</div>
+        `;
 
-      const $availabilityFootnote = document.createElement("div");
-      $availabilityFootnote.classList.add("availability-footnote");
-      $availabilityFootnote.innerText =
-        "* Tax Exemption and discounted room rates will apply on final invoice after reservation approval.";
-
-      const date = selectedDate.format("YYYY-MM-DD");
-      const formUrl = `https://portal.dupontcenter.org/events/public?resID=${resource.id}&from=${date} ${$start.value}&to=${date} ${$end.value}`;
-      const $availabilityAdd = document.createElement("div");
-      $availabilityAdd.classList.add("availability-button", "availability-add");
-      $availabilityAdd.addEventListener("click", () => (location.href = formUrl));
-      $availabilityAdd.innerHTML = `
-        Add to request
-        <i class="fa-solid fa-plus availability-add-icon"></i>
-      `;
-
-      $availabilityDetails.replaceChildren(
-        $availabilityTitle,
-        $availabilityFees,
-        $availabilityTotal,
-        $availabilityFootnote,
-        $availabilityAdd
-      );
+        $availabilityDetails.replaceChildren($availabilityTitle, $availabilityReason);
+      }
     }
   }
 }
