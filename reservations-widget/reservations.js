@@ -333,6 +333,10 @@ class ReservationsWidget extends HTMLElement {
     this.renderTimes();
   }
 
+  get resourceId() {
+    return this.getAttribute("resourceId");
+  }
+
   get reservationId() {
     return this.getAttribute("reservationId");
   }
@@ -385,7 +389,7 @@ class ReservationsWidget extends HTMLElement {
       fetch("https://portal.dupontcenter.org/api/calendarAvailability", {
         method: "POST",
         body: JSON.stringify({
-          resourceIDRes: this.reservationId,
+          resourceIDRes: this.resourceId,
           date: startOfMonth.format("YYYY-MM-DD"),
         }),
       })
@@ -410,7 +414,7 @@ class ReservationsWidget extends HTMLElement {
       fetch("https://portal.dupontcenter.org/api/resources/getAvailability", {
         method: "POST",
         body: JSON.stringify({
-          resourceIDRes: this.reservationId,
+          resourceIDRes: this.resourceId,
           fromDateTime: `${dateString} ${$start.value}`,
           toDateTime: `${dateString} ${$end.value}`,
         }),
