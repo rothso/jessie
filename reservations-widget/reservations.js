@@ -121,6 +121,14 @@ class ReservationsWidget extends HTMLElement {
           font-weight: 300;
         }
 
+        .calendar-text {
+          font-size: 14px;
+          font-weight: 300;
+          color: #484c5b;
+          text-align: left;
+          margin-bottom: 25px;
+        }
+
         .calendar-time {
           display: flex;
           column-gap: 15px;
@@ -315,6 +323,9 @@ class ReservationsWidget extends HTMLElement {
               <div class="calendar-legend-label">Low availability</div>
             </div>
           </div>
+        </div>
+        <div class="calendar-text">
+          Setup and breakdown time must be included within your reserved time block.
         </div>
         <div class="calendar-time">
           <div class="calendar-time-item">
